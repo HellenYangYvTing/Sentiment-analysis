@@ -1,0 +1,70 @@
+import requests
+import json
+import csv
+import re
+import time
+from lxml import etree
+
+comment_url = 'https://club.jd.com/comment/productPageComments.action'
+
+f = open("JDcontents.csv", mode="a", encoding="utf-8", newline='')
+csvwriter = csv.writer(f)
+row = ('评论', '评分')
+csvwriter.writerow(row)
+
+for i in range(1000):
+    page = i
+    params = {
+        'productId': 100021368778,  # 商品id，先写死
+        'score': 0,
+        'sortType': 5,
+        'page': page,
+        'pageSize': 10,
+        'callback': 'fetchJSON_comment98',
+        'isShadowSku': 0,
+        'fold': 1
+    }
+
+    headers = {
+        'cookie': 'shshshfpa=980322f4-0d72-08ea-9cb2-4fcadde80a00-1562576627; shshshfpb=ymAFpsvPn5OjLe2TxXJVyZQ==; __jdu=16150341377512100580391; areaId=1; ipLoc-djd=1-2800-55811-0; mt_xid=V2_52007VwMVUllZUF8fSx9aAWcAElNcXFtbHUEZbAYwVhdbDVkCRh9AEFsZYgdBBkEIVw1IVUlbA24KQVEPXFcIGnkaXQZnHxNaQVhbSx5AElgAbAITYl9oUWocSB9UAGIzEVVdXg==; unpl=V2_ZzNtbUBVREUmC0QBfkkMDGJRQlwSV0ATIQFGUnIZCwBnABRYclRCFnUUR1xnGl4UZwYZXEtcQRBFCEdkeBBVAWMDE1VGZxBFLV0CFSNGF1wjU00zQwBBQHcJFF0uSgwDYgcaDhFTQEJ2XBVQL0oMDDdRFAhyZ0AVRQhHZHseXAFmARddQFFFEXULRlV6HVUEZQsSbXJQcyVFDENceRhbNWYzE20AAx8TcwpBVX9UXAJnBxNfR1dBE3MMRld7GF0BbgIQVUJnQiV2; __jdv=76161171|baidu-pinzhuan|t_288551095_baidupinzhuan|cpc|0f3d30c8dba7459bb52f2eb5eba8ac7d_0_336ab23d4aa84ca0a127e81781f41274|1632377314623; PCSYCityID=CN_110000_110100_110108; __jdc=122270672; user-key=0245721f-bdeb-4f17-9fd2-b5e647ad7f3e; jwotest_product=99; 3AB9D23F7A4B3C9B=OOGFR7VEBOKC3KPZ6KF3FKUOPTYV2UTP6I26CTJWT6CBR7KDFT6DA7AKGYBOIC5VE3AGWVCO44IPRLJZQM5VPBDKRE; JSESSIONID=46917FB9FE60177DB85E0C091A5C8FAF.s1; token=99875fb0a82322eb00929602d9fdab55,2,906912; __tk=4086d8d38c07ebb4e4b362eea76cafe2,2,906912; shshshfp=c2c9dff3d03e7dbcde741bff708fe2e2; shshshsID=fb5d8854f2e1a1df19277069a691e5a1_1_1632441948072; __jda=122270672.16150341377512100580391.1615034138.1632377315.1632441948.14; __jdb=122270672.1.16150341377512100580391|14.1632441948',
+        'referer': 'https://item.jd.com/100000287113.html',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36'
+    }
+
+    comment_resp = requests.get(url=comment_url, params=params, headers=headers)
+    comment_resp.close()
+
+    #print(comment_resp.status_code)
+    #print(comment_resp.text)
+
+    #obj1 = re.compile(r'fetchJSON_comment98[(](?P<json>.*?)[)];',re.S)
+    obj1 = re.compile(r'.*?"comments":(?P<coments>.*?)[)];', re.S)
+    obj2 = re.compile(r'.*?"content":"(?P<content>.*?)",".*?"score":(?P<score>.*?),"', re.S)
+
+    file_json = 'comments.json'
+    comment_str = obj1.finditer(comment_resp.text)
+
+
+
+    for it in comment_str:
+        json = it.group('coments')
+        print(json)
+        result = obj2.finditer(json)
+
+
+        for it in result:
+            #print(it.group('content'))
+            dic = it.groupdict()  # 字典
+            #print('\n')
+            #print(dic)
+
+            dic['content'] = dic['content'].replace('\\n', '').replace('&hellip;','') #去掉换行字符存入字典中
+            #print(dic)
+            csvwriter.writerow(dic.values())
+
+        print("over!")
+
+        time.sleep(1)
+f.close()
+        #with open(file_json, 'w') as file_obj:
+            #json.dumps(json, file_obj)
